@@ -86,6 +86,7 @@ async def stinky_alert(url: str, interval: str, channel: int, user: int, diff):
     diff_len = 0
     for line in diff:
         if diff_len + len(line) >= 1800:
+            message += 'diff is too long to show the rest :('
             break
         message += line 
         diff_len += len(line)
