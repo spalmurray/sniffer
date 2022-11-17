@@ -85,7 +85,7 @@ async def stinky_alert(url: str, interval: str, channel: int, user: int, diff):
     message = f'{user.mention}, {url} smells differently this {clean_interval}! Here is the diff:\n```'
     diff_len = 0
     for line in diff:
-        if diff_len + len(line) >= 3500:
+        if diff_len + len(line) >= 1800:
             break
         message += line 
         diff_len += len(line)
