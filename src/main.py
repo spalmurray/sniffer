@@ -4,6 +4,8 @@ from sniffer import Sniffer
 import discord
 from discord import option
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import difflib
+import re
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -77,10 +79,17 @@ async def delete_url(ctx: discord.ApplicationContext, id: str):
 
 # Scheduling
 
-async def stinky_alert(url: str, interval: str, channel: int, user: int):
+async def stinky_alert(url: str, interval: str, channel: int, user: int, diff):
     clean_interval = "day" if interval == "daily" else interval[:-2]
     user = await bot.fetch_user(user)
-    message = f'{user.mention}, {url} smells differently this {clean_interval}!'
+    message = f'{user.mention}, {url} smells differently this {clean_interval}! Here is the diff:\n```'
+    diff_len = 0
+    for line in diff:
+        if diff_len + len(line) >= 3500:
+            break
+        message += line 
+        diff_len += len(line)
+    message += '```'
     await bot.get_channel(channel).send(message)
 
 async def down_alert(url: str, interval: str, channel: int, user: int):
@@ -106,11 +115,13 @@ async def go_sniffing(interval: str):
             database.update_data(url["_id"], smell)
             await up_alert(url["url"], url["interval"], url["channel"], url["user"])
         elif smell and smell != url["previous_data"]:
+            diff = difflib.unified_diff(re.split('(\n)', url["previous_data"]), re.split('(\n)', smell), fromfile="old", tofile="new")
             database.update_data(url["_id"], smell)
-            await stinky_alert(url["url"], url["interval"], url["channel"], url["user"])
+            await stinky_alert(url["url"], url["interval"], url["channel"], url["user"], diff)
 
 scheduler = AsyncIOScheduler()
 scheduler.add_job(go_sniffing, 'cron', second=0, args=["minutely"])
+scheduler.add_job(go_sniffing, 'cron', second=30, args=["minutely"])
 scheduler.add_job(go_sniffing, 'cron', minute=0, args=["hourly"])
 scheduler.add_job(go_sniffing, 'cron', hour=0, args=["daily"])
 scheduler.add_job(go_sniffing, 'cron', day_of_week=0, args=["weekly"])
