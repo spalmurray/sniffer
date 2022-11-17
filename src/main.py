@@ -125,7 +125,6 @@ async def go_sniffing(interval: str):
 
 scheduler = AsyncIOScheduler()
 scheduler.add_job(go_sniffing, 'cron', second=0, args=["minutely"])
-scheduler.add_job(go_sniffing, 'cron', second=30, args=["minutely"])
 scheduler.add_job(go_sniffing, 'cron', minute=0, args=["hourly"])
 scheduler.add_job(go_sniffing, 'cron', hour=0, args=["daily"])
 scheduler.add_job(go_sniffing, 'cron', day_of_week=0, args=["weekly"])
