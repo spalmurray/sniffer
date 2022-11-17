@@ -52,7 +52,7 @@ async def list_channel_urls(ctx: discord.ApplicationContext):
     response = ""
     for url in urls:
         user = await bot.fetch_user(url["user"])
-        response += f'Sniffing {url["url"]} {url["interval"]} for {user.name}\n(id: {url["id"]})\n\n'
+        response += f'Sniffing {url["url"]} {url["interval"]} for {user.name}\n(id: {url["_id"]})\n\n'
     await ctx.respond(response)
 
 @bot.slash_command(description="List urls registered in this server")
@@ -66,7 +66,7 @@ async def list_server_urls(ctx: discord.ApplicationContext):
     response = ""
     for url in urls:
         user = await bot.fetch_user(url["user"])
-        response += f'Sniffing {url["url"]} {url["interval"]} for {user.name}\n(id: {url["id"]})\n\n'
+        response += f'Sniffing {url["url"]} {url["interval"]} for {user.name}\n(id: {url["_id"]})\n\n'
     await ctx.respond(response)
 
 @bot.slash_command(description="Delete a url by its id. Find id with /list_channel_urls")
@@ -108,13 +108,17 @@ async def go_sniffing(interval: str):
     urls = database.list_interval_matches(interval)
     for url in urls:
         smell = sniffer.sniff(url["url"])
-        if not smell and url["previous_data"] != "down":
-            database.update_data(url["_id"], "down")
+        if not smell and not url["is_down"]:
+            database.set_is_down(url["_id"], True)
             await down_alert(url["url"], url["interval"], url["channel"], url["user"])
-        elif smell and url["previous_data"] == "down":
-            database.update_data(url["_id"], smell)
+            continue
+        elif not smell:
+            continue
+        elif url["is_down"]:
+            database.set_is_down(url["_id"], False)
             await up_alert(url["url"], url["interval"], url["channel"], url["user"])
-        elif smell and smell != url["previous_data"]:
+
+        if smell != url["previous_data"]:
             diff = difflib.unified_diff(re.split('(\n)', url["previous_data"]), re.split('(\n)', smell), fromfile="old", tofile="new")
             database.update_data(url["_id"], smell)
             await stinky_alert(url["url"], url["interval"], url["channel"], url["user"], diff)
@@ -128,6 +132,7 @@ scheduler.add_job(go_sniffing, 'cron', day_of_week=0, args=["weekly"])
 scheduler.add_job(go_sniffing, 'cron', day=1, args=["monthly"])
 scheduler.start()
 
+database.run_migration()
 print("Starting sniffer")
 config = configuration.Config()
 bot.run(config.token)

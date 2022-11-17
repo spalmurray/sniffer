@@ -10,7 +10,8 @@ class Client:
         - _id
         - url
         - interval
-        - previous-data
+        - previous_data
+        - is_down
         - guild
         - channel
         - user
@@ -34,6 +35,7 @@ class Client:
             "url": url,
             "interval": interval,
             "previous_data": previous_data,
+            "is_down": False,
             "guild": guild,
             "channel": channel,
             "user": user
@@ -45,6 +47,11 @@ class Client:
             {"_id": ObjectId(id)}, update={"$set": {"previous_data": new_data}}
         )
 
+    def set_is_down(self, id: str, is_down: bool):
+        self.db.urls.find_one_and_update(
+            {"_id": ObjectId(id)}, update={"$set": {"is_down": is_down}}
+        )
+
     def delete_url(self, id: str, guild: int):
         url = self.db.urls.find_one_and_delete(
             {'_id': ObjectId(id), 'guild': guild}
@@ -53,19 +60,25 @@ class Client:
     
     def list_channel_urls(self, channel: int):
         cursor = self.db.urls.find({'channel': channel})
-        urls = []
-        for url in cursor:
-            urls.append({"id": str(url["_id"]), "url": url["url"], "interval": url["interval"], "user": int(url["user"])})
-        return urls
+        return [url for url in cursor]
 
     def list_guild_urls(self, guild: int):
         cursor = self.db.urls.find({'guild': guild})
-        urls = []
-        for url in cursor:
-            urls.append({"id": str(url["_id"]), "url": url["url"], "interval": url["interval"], "user": int(url["user"])})
-        return urls
+        return [url for url in cursor]
     
     def list_interval_matches(self, interval: str):
         cursor = self.db.urls.find({'interval': interval})
         return [url for url in cursor]
-        
+    
+    def run_migration(self):
+        cursor = self.db.urls.find()
+        for url in cursor:
+            if "is_down" not in url.keys():
+                self.set_is_down(url["_id"], False)
+                
+
+
+if __name__ == "__main__":
+    database = Client()
+    database.run_migration()
+    print("done")
