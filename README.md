@@ -1,2 +1,3 @@
 # sniffer
-Discord bot to notify you of webpage updates
+
+Check webpages for updates on a regular interval.
