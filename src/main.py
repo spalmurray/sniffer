@@ -50,7 +50,7 @@ async def list_channel_urls(ctx: discord.ApplicationContext):
     response = ""
     for url in urls:
         user = await bot.fetch_user(url["user"])
-        response += f'Sniffing {url["url"]} {url["interval"]} for {user.display_name}\n(id: {url["id"]})\n\n'
+        response += f'Sniffing {url["url"]} {url["interval"]} for {user.name}\n(id: {url["id"]})\n\n'
     await ctx.respond(response)
 
 @bot.slash_command(description="List urls registered in this server")
@@ -64,7 +64,7 @@ async def list_server_urls(ctx: discord.ApplicationContext):
     response = ""
     for url in urls:
         user = await bot.fetch_user(url["user"])
-        response += f'Sniffing {url["url"]} {url["interval"]} for {user.display_name}\n(id: {url["id"]})\n\n'
+        response += f'Sniffing {url["url"]} {url["interval"]} for {user.name}\n(id: {url["id"]})\n\n'
     await ctx.respond(response)
 
 @bot.slash_command(description="Delete a url by its id. Find id with /list_channel_urls")
